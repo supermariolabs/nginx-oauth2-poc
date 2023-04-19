@@ -1,0 +1,72 @@
+version: "3"
+services:
+  keycloak:
+    image: keycloak/keycloak
+    hostname: keycloak.my.com
+    environment:
+      - "KEYCLOAK_ADMIN=admin"
+      - "KEYCLOAK_ADMIN_PASSWORD=admin"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/
+    command: start-dev
+    ports:
+      - 8080:8080
+    networks:
+      - my
+    restart: always  
+
+  httpbin-1:
+    image: kennethreitz/httpbin
+    hostname: httpbin-1
+    networks:
+      - my
+    restart: always
+
+  httpbin-2:
+    image: kennethreitz/httpbin
+    hostname: httpbin-2
+    networks:
+      - my
+    restart: always
+
+  oauth2-proxy:
+    image: bitnami/oauth2-proxy
+    hostname: oauth2-proxy
+    command:
+      - --http-address
+      - 0.0.0.0:4180 
+    environment:
+      OAUTH2_PROXY_PROVIDER_DISPLAY_NAME: Keycloak
+      OAUTH2_PROXY_PROVIDER: oidc
+      OAUTH2_PROXY_OIDC_ISSUER_URL: http://keycloak.my.com:8080/realms/test
+      OAUTH2_PROXY_CLIENT_ID: test
+      OAUTH2_PROXY_CLIENT_SECRET: eytkLuI0FxptfbwJuMaUWMaXWpnwDSZ6
+      OAUTH2_PROXY_EMAIL_DOMAINS: '*'
+      OAUTH2_PROXY_COOKIE_SECURE: false
+      OAUTH2_PROXY_COOKIE_DOMAIN: '.my.com'
+      OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL: true
+      OAUTH2_PROXY_COOKIE_SECRET: '1234567887654321'
+      OAUTH2_PROXY_PASS_ACCESS_TOKEN: true
+      OAUTH2_PROXY_PASS_USER_HEADERS: true
+      OAUTH2_PROXY_OIDC_GROUPS_CLAIM: 'tenant'
+      OAUTH2_PROXY_PASS_AUTHORIZATION_HEADER: true
+      OAUTH2_PROXY_SET_XAUTHREQUEST: true
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: false
+    networks:
+      - my
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    hostname: nginx
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/nginx.conf
+      - ./njs-examples/njs:/etc/nginx/njs
+    ports:
+      - "80:80"
+    networks:
+      - my
+    restart: always
+
+networks:
+  my:
